@@ -42,82 +42,104 @@
       background-color: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      padding: max(16px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+      padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
     }
 
-    .container { max-width: 1020px; margin: 0 auto; }
+    .container { max-width: 1000px; margin: 0 auto; }
 
-    header { text-align: center; margin-bottom: 18px; }
-    header h1 { font-size: clamp(1.45rem, 4vw, 1.95rem); margin-bottom: 6px; }
-    header p { color: var(--muted); font-size: clamp(0.85rem, 2.5vw, 0.95rem); }
+    /* رأس الصفحة المرتب */
+    header {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    }
 
-    .legend {
+    .header-top {
       display: flex;
-      gap: 14px;
-      justify-content: center;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
       flex-wrap: wrap;
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-top: 8px;
     }
 
-    .install-banner {
-      margin-top: 12px;
-      display: inline-flex;
+    .header-brand h1 {
+      font-size: clamp(1.25rem, 3.8vw, 1.65rem);
+      margin-bottom: 4px;
+    }
+
+    .header-brand p {
+      color: var(--muted);
+      font-size: clamp(0.8rem, 2.3vw, 0.9rem);
+    }
+
+    .header-actions {
+      display: flex;
       align-items: center;
       gap: 8px;
-      background: #eff6ff;
-      border: 1.5px solid #bfdbfe;
-      color: var(--primary-dark);
-      padding: 8px 16px;
+      flex-wrap: wrap;
+    }
+
+    .undo-pill {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+      padding: 7px 12px;
       border-radius: 99px;
-      font-size: 0.88rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      touch-action: manipulation;
+      transition: background 0.15s;
+    }
+    .undo-pill:hover { background: #fde68a; }
+
+    .install-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: var(--primary-dark);
+      padding: 7px 13px;
+      border-radius: 99px;
+      font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
       touch-action: manipulation;
     }
     .install-banner:hover { background: #dbeafe; }
 
-    .controls-bar {
-      background: var(--card-bg);
-      padding: 14px;
-      border-radius: 16px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
-      margin-bottom: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      border: 1px solid var(--border);
-    }
-
-    .search-row {
+    .legend {
       display: flex;
       gap: 10px;
-      flex-wrap: wrap;
       align-items: center;
+      flex-wrap: wrap;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #f1f5f9;
     }
 
-    .search-input, .form-input, .form-select, .form-textarea {
-      padding: 11px 14px;
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      font-size: 16px;
-      outline: none;
-      background: #fff;
-      color: var(--text);
-      transition: border-color 0.2s;
+    .legend-pill {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      padding: 3px 9px;
+      border-radius: 99px;
     }
 
-    .search-input { flex: 1; min-width: 200px; }
-    .search-input:focus, .form-input:focus, .form-select:focus, .form-textarea:focus {
-      border-color: var(--primary);
-    }
-
+    /* التبويبات الرئيسية */
     .tabs {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 16px;
+      gap: 6px;
+      margin-bottom: 14px;
       background: #e2e8f0;
       padding: 5px;
       border-radius: 14px;
@@ -129,7 +151,7 @@
       border-radius: 10px;
       background: transparent;
       color: var(--text);
-      font-size: clamp(0.82rem, 2.5vw, 0.95rem);
+      font-size: clamp(0.82rem, 2.5vw, 0.94rem);
       font-weight: 600;
       cursor: pointer;
       touch-action: manipulation;
@@ -143,21 +165,76 @@
       box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
     }
 
+    /* شريط البحث والتصنيف */
+    .controls-bar {
+      background: var(--card-bg);
+      padding: 10px 12px;
+      border-radius: 14px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+    }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .search-input, .form-input, .form-select, .form-textarea {
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 11px;
+      font-size: 15px;
+      outline: none;
+      background: #fff;
+      color: var(--text);
+      transition: border-color 0.2s;
+    }
+
+    .search-input:focus, .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--primary);
+    }
+
+    /* إشعار عائم غير مزعج */
+    .global-toast {
+      position: fixed;
+      bottom: max(18px, env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      background: #0f172a;
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 99px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25);
+      z-index: 1200;
+      max-width: calc(100vw - 28px);
+      text-align: center;
+    }
+
+    /* شريط التقدم */
+    .progress-wrapper {
+      margin-bottom: 16px;
+    }
+
     .progress-box {
       display: flex;
       justify-content: space-between;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: var(--muted);
       margin-bottom: 6px;
+      font-weight: 600;
     }
 
     .progress-bar-bg {
       width: 100%;
-      height: 8px;
+      height: 7px;
       background: #e2e8f0;
       border-radius: 99px;
       overflow: hidden;
-      margin-bottom: 18px;
     }
 
     .progress-bar-fill {
@@ -167,6 +244,7 @@
       transition: width 0.3s ease;
     }
 
+    /* البطاقات التعليمية */
     .flashcard-wrapper {
       display: flex;
       flex-direction: column;
@@ -184,9 +262,9 @@
     .scene {
       width: 100%;
       max-width: 540px;
-      height: 310px;
+      height: 300px;
       perspective: 1000px;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
       cursor: pointer;
       touch-action: pan-y;
     }
@@ -209,7 +287,7 @@
       -webkit-backface-visibility: hidden;
       background: var(--card-bg);
       border-radius: 20px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.07);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
       padding: 22px 18px;
       display: flex;
       flex-direction: column;
@@ -310,20 +388,19 @@
 
     .flashcard-actions {
       display: grid;
-      grid-template-columns: repeat(4, auto);
-      gap: 10px;
-      justify-content: center;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
       width: 100%;
       max-width: 540px;
     }
 
     .btn {
-      padding: 11px 16px;
-      min-height: 44px;
+      padding: 10px 14px;
+      min-height: 42px;
       border: none;
       border-radius: 12px;
       cursor: pointer;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
       font-weight: 600;
       touch-action: manipulation;
       display: inline-flex;
@@ -339,24 +416,82 @@
     .btn-success { background: var(--success); color: #fff; }
     .btn-danger { background: var(--danger); color: #fff; }
     .btn-warning { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-    .btn-danger-soft { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-    .btn-danger-soft:hover { background: #fee2e2; }
     .btn-outline { background: #fff; border: 1.5px solid var(--border); color: var(--text); }
 
+    /* شريط قائمة المفردات + قائمة الإدارة المنسدلة */
     .list-toolbar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
       gap: 10px;
       margin-bottom: 14px;
-      background: var(--card-bg);
-      padding: 12px 16px;
-      border-radius: 14px;
-      border: 1px solid var(--border);
+      padding: 4px 2px;
+      position: relative;
     }
 
-    .toolbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .list-count-label {
+      font-weight: 700;
+      font-size: 0.92rem;
+      color: var(--text);
+    }
+
+    .dropdown-wrap {
+      position: relative;
+    }
+
+    .dropdown-trigger {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      padding: 7px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      touch-action: manipulation;
+    }
+    .dropdown-trigger:hover { border-color: #cbd5e1; background: #f8fafc; }
+
+    .dropdown-menu {
+      position: absolute;
+      left: 0;
+      top: calc(100% + 6px);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
+      min-width: 220px;
+      padding: 6px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .dropdown-item {
+      width: 100%;
+      text-align: right;
+      background: transparent;
+      border: none;
+      padding: 10px 12px;
+      border-radius: 9px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      touch-action: manipulation;
+    }
+    .dropdown-item:hover { background: #f1f5f9; }
+    .dropdown-item:disabled { opacity: 0.45; cursor: not-allowed; }
+    .dropdown-item.danger { color: #dc2626; }
+    .dropdown-item.danger:hover { background: #fef2f2; }
+    .dropdown-divider { height: 1px; background: var(--border); margin: 4px 6px; }
 
     .vocab-grid {
       display: grid;
@@ -462,16 +597,17 @@
       font-weight: 600;
     }
 
+    /* قسم الإضافة والنسخ الاحتياطي */
     .panel {
       background: var(--card-bg);
       padding: 18px;
       border-radius: 16px;
       border: 1px solid var(--border);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
-    .panel h2 { font-size: 1.15rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .panel h2 { font-size: 1.12rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
     .panel-desc { color: var(--muted); font-size: 0.88rem; margin-bottom: 14px; line-height: 1.55; }
     .backup-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
@@ -536,6 +672,7 @@
     th { background: #f8fafc; font-weight: 700; }
     td input, td select { width: 100%; padding: 7px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; }
 
+    /* النوافذ المنبثقة */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -616,17 +753,8 @@
       direction: ltr;
     }
 
-    .conj-pronoun {
-      color: var(--muted);
-      font-size: 0.82rem;
-      font-weight: 600;
-    }
-
-    .conj-form {
-      font-weight: 700;
-      color: var(--text);
-      font-size: 0.95rem;
-    }
+    .conj-pronoun { color: var(--muted); font-size: 0.82rem; font-weight: 600; }
+    .conj-form { font-weight: 700; color: var(--text); font-size: 0.95rem; }
 
     .conj-speak {
       background: #eff6ff;
@@ -711,16 +839,13 @@
     }
 
     @media (max-width: 640px) {
-      .search-row { flex-direction: column; align-items: stretch; }
-      .search-input, #categoryFilter, #undoBtn { width: 100%; }
+      .header-top { flex-direction: column; align-items: flex-start; }
+      .search-row { grid-template-columns: 1fr; }
       .tabs { gap: 5px; }
       .tab-btn { padding: 10px 6px; font-size: 0.8rem; }
-      .scene { height: 275px; }
+      .scene { height: 270px; }
       .flashcard-actions { grid-template-columns: repeat(2, 1fr); }
       .vocab-grid { grid-template-columns: 1fr; }
-      .list-toolbar { flex-direction: column; align-items: stretch; text-align: center; }
-      .toolbar-actions { flex-direction: column; }
-      .toolbar-actions .btn { width: 100%; }
       .backup-actions { flex-direction: column; }
       .backup-actions .btn { width: 100%; }
       .form-grid { grid-template-columns: 1fr; }
@@ -732,22 +857,40 @@
 <body>
 
   <div class="container">
+    <!-- رأس الصفحة المرتب -->
     <header>
-      <h1>🇩🇪 تعلم اللغة الألمانية</h1>
-      <p>بطاقات تعليمية + تصريف الأفعال القابل للتعديل + بحث فوري + تطبيق هاتف</p>
-      <div class="legend">
-        <span><strong class="article-der">der</strong> = مذكر</span>
-        <span><strong class="article-die">die</strong> = مؤنث</span>
-        <span><strong class="article-das">das</strong> = محايد</span>
-        <span>• انقر على أي كلمة لعرض أو تعديل تصريفاتها</span>
+      <div class="header-top">
+        <div class="header-brand">
+          <h1>🇩🇪 تعلم اللغة الألمانية</h1>
+          <p>بطاقات تعليمية، تصريف الأفعال، وحفظ ذكي لمفرداتك</p>
+        </div>
+        <div class="header-actions">
+          <button type="button" id="undoBtn" class="undo-pill hidden">
+            ↩️ تراجع
+          </button>
+          <button type="button" id="installAppBtn" class="install-banner hidden">
+            📲 تثبيت التطبيق
+          </button>
+        </div>
       </div>
-      <button type="button" id="installAppBtn" class="install-banner hidden">
-        📲 تثبيت التطبيق على الهاتف
-      </button>
+
+      <div class="legend">
+        <span class="legend-pill"><strong class="article-der">der</strong> مذكر</span>
+        <span class="legend-pill"><strong class="article-die">die</strong> مؤنث</span>
+        <span class="legend-pill"><strong class="article-das">das</strong> محايد</span>
+        <span style="margin-right:auto;">💡 انقر على أي كلمة لعرض تصريفاتها</span>
+      </div>
     </header>
 
-    <!-- شريط البحث + التراجع -->
-    <div class="controls-bar">
+    <!-- التبويبات الرئيسية -->
+    <nav class="tabs">
+      <button class="tab-btn active" id="tabFlashcards">🗂️ البطاقات</button>
+      <button class="tab-btn" id="tabList">📖 المفردات (<span id="totalCountBadge">0</span>)</button>
+      <button class="tab-btn" id="tabAdd">➕ إضافة / نسخ احتياطي</button>
+    </nav>
+
+    <!-- شريط البحث والتصفية (يظهر فقط في البطاقات والمفردات) -->
+    <div class="controls-bar" id="searchControlsBar">
       <div class="search-row">
         <input
           type="text"
@@ -764,22 +907,11 @@
           <option value="حياة يومية">الحياة اليومية</option>
           <option value="مفردات عامة">مفردات عامة</option>
         </select>
-        <button type="button" id="undoBtn" class="btn btn-warning" disabled>
-          ↩️ تراجع عن آخر تعديل
-        </button>
       </div>
-      <div id="globalNotice" class="status-msg hidden"></div>
-    </div>
-
-    <!-- التبويبات -->
-    <div class="tabs">
-      <button class="tab-btn active" id="tabFlashcards">🗂️ البطاقات</button>
-      <button class="tab-btn" id="tabList">📖 المفردات (<span id="totalCountBadge">0</span>)</button>
-      <button class="tab-btn" id="tabAdd">➕ إضافة / نسخ احتياطي</button>
     </div>
 
     <!-- شريط التقدم -->
-    <div id="progressWrapper">
+    <div id="progressWrapper" class="progress-wrapper">
       <div class="progress-box">
         <span id="progressText">تم إتقان 0 من 0 كلمة</span>
         <span id="cardCounter">البطاقة 0 / 0</span>
@@ -835,20 +967,18 @@
     <!-- 2. قسم قائمة المفردات -->
     <section id="listSection" class="hidden">
       <div class="list-toolbar">
-        <span id="listSummaryText" style="font-weight: 600; font-size: 0.92rem;">إجمالي المعروض: 0 مفردة</span>
-        <div class="toolbar-actions">
-          <button type="button" id="quickExportBtn" class="btn btn-outline" style="min-height:38px; padding:7px 12px; font-size:0.84rem;">
-            📥 تصدير نسخة
+        <span id="listSummaryText" class="list-count-label">إجمالي المعروض: 0 مفردة</span>
+        <div class="dropdown-wrap">
+          <button type="button" id="listMenuBtn" class="dropdown-trigger">
+            ⚙️ إدارة القائمة ▾
           </button>
-          <button type="button" id="quickImportBtn" class="btn btn-outline" style="min-height:38px; padding:7px 12px; font-size:0.84rem;">
-            📤 استيراد نسخة
-          </button>
-          <button type="button" id="restoreDefaultBtn" class="btn btn-outline" style="min-height:38px; padding:7px 12px; font-size:0.84rem;">
-            🔄 استعادة الافتراضية
-          </button>
-          <button type="button" id="deleteAllBtn" class="btn btn-danger-soft" style="min-height:38px; padding:7px 12px; font-size:0.84rem;">
-            حذف جميع الكلمات
-          </button>
+          <div id="listActionsMenu" class="dropdown-menu hidden">
+            <button type="button" id="quickExportBtn" class="dropdown-item">📥 تصدير نسخة احتياطية</button>
+            <button type="button" id="quickImportBtn" class="dropdown-item">📤 استيراد نسخة احتياطية</button>
+            <button type="button" id="restoreDefaultBtn" class="dropdown-item">🔄 استعادة الافتراضية</button>
+            <div class="dropdown-divider"></div>
+            <button type="button" id="deleteAllBtn" class="dropdown-item danger">🗑️ حذف جميع الكلمات</button>
+          </div>
         </div>
       </div>
 
@@ -1002,6 +1132,9 @@
 
     </section>
   </div>
+
+  <!-- إشعار عائم غير مزعج -->
+  <div id="globalNotice" class="global-toast hidden"></div>
 
   <!-- نافذة عرض وتعديل التصريفات والإعراب -->
   <div id="conjugationModal" class="modal-overlay hidden">
@@ -2108,11 +2241,10 @@
 
     function updateUndoButton() {
       if (undoStack.length === 0) {
-        undoBtn.disabled = true;
-        undoBtn.textContent = "↩️ تراجع عن آخر تعديل";
+        undoBtn.classList.add("hidden");
       } else {
         const last = undoStack[undoStack.length - 1];
-        undoBtn.disabled = false;
+        undoBtn.classList.remove("hidden");
         undoBtn.textContent = `↩️ تراجع: ${last.label}`;
       }
     }
@@ -2132,9 +2264,10 @@
 
     let noticeTimer = null;
     function showTempGlobalNotice(msg) {
-      showStatus(globalNotice, msg, "success");
+      globalNotice.textContent = msg;
+      globalNotice.classList.remove("hidden");
       clearTimeout(noticeTimer);
-      noticeTimer = setTimeout(() => globalNotice.classList.add("hidden"), 3500);
+      noticeTimer = setTimeout(() => globalNotice.classList.add("hidden"), 3200);
     }
 
     // ==========================================
@@ -2319,6 +2452,7 @@
     // ==========================================
     // 7. عناصر DOM والعرض التلقائي
     // ==========================================
+    const searchControlsBar = document.getElementById("searchControlsBar");
     const searchInput = document.getElementById("searchInput");
     const categoryFilter = document.getElementById("categoryFilter");
     const tabFlashcards = document.getElementById("tabFlashcards");
@@ -2358,6 +2492,8 @@
     const scrollSentinel = document.getElementById("scrollSentinel");
     const emptyList = document.getElementById("emptyList");
     const listSummaryText = document.getElementById("listSummaryText");
+    const listMenuBtn = document.getElementById("listMenuBtn");
+    const listActionsMenu = document.getElementById("listActionsMenu");
     const deleteAllBtn = document.getElementById("deleteAllBtn");
     const restoreDefaultBtn = document.getElementById("restoreDefaultBtn");
     const quickExportBtn = document.getElementById("quickExportBtn");
@@ -2365,6 +2501,18 @@
     const progressText = document.getElementById("progressText");
     const cardCounter = document.getElementById("cardCounter");
     const progressBar = document.getElementById("progressBar");
+
+    // قائمة الإدارة المنسدلة في المفردات
+    listMenuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      listActionsMenu.classList.toggle("hidden");
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".dropdown-wrap")) {
+        listActionsMenu.classList.add("hidden");
+      }
+    });
 
     function getFullGerman(item) {
       return item.article ? `${item.article} ${item.word}` : item.word;
@@ -2520,7 +2668,7 @@
 
     function renderList(resetLimit = true) {
       listNeedsRender = false;
-      listSummaryText.textContent = `إجمالي المعروض: ${filteredCards.length} مفردة`;
+      listSummaryText.textContent = `المفردات المعروضة: ${filteredCards.length}`;
       deleteAllBtn.disabled = vocabularyData.length === 0;
 
       if (filteredCards.length === 0) {
@@ -2612,13 +2760,14 @@
     });
 
     deleteAllBtn.addEventListener("click", () => {
+      listActionsMenu.classList.add("hidden");
       if (vocabularyData.length === 0) return;
       openConfirmModal({
         title: "حذف جميع الكلمات",
         message: `هل أنت متأكد من حذف جميع الكلمات (${vocabularyData.length} كلمة)؟ يمكنك التراجع لاحقاً من زر التراجع بالأعلى.`,
         okText: "نعم، احذف الكل",
         onOk: () => {
-          pushUndo(`حذف جميع الكلمات (${vocabularyData.length})`);
+          pushUndo(`حذف الكل (${vocabularyData.length})`);
           vocabularyData = [];
           masteredIds.clear();
           saveVocabulary();
@@ -2630,6 +2779,7 @@
     });
 
     restoreDefaultBtn.addEventListener("click", () => {
+      listActionsMenu.classList.add("hidden");
       openConfirmModal({
         title: "استعادة الكلمات الافتراضية",
         message: "سيتم إضافة الكلمات الأساسية التي لا توجد في قائمتك حالياً.",
@@ -2658,7 +2808,9 @@
       flashcardsSection.classList.toggle("hidden", tab !== "flashcards");
       listSection.classList.toggle("hidden", tab !== "list");
       addSection.classList.toggle("hidden", tab !== "add");
-      progressWrapper.classList.toggle("hidden", tab === "add");
+
+      searchControlsBar.classList.toggle("hidden", tab === "add");
+      progressWrapper.classList.toggle("hidden", tab !== "flashcards");
 
       if (tab === "list" && listNeedsRender) {
         renderList(true);
@@ -2701,6 +2853,7 @@
     });
 
     function exportBackupJson() {
+      listActionsMenu.classList.add("hidden");
       const today = new Date().toISOString().slice(0, 10);
       const cleanVocab = vocabularyData.map(({ _search, ...rest }) => rest);
       const payload = {
@@ -2739,7 +2892,10 @@
     exportCsvBtn.addEventListener("click", exportBackupCsv);
 
     importJsonBtn.addEventListener("click", () => importFileInput.click());
-    quickImportBtn.addEventListener("click", () => importFileInput.click());
+    quickImportBtn.addEventListener("click", () => {
+      listActionsMenu.classList.add("hidden");
+      importFileInput.click();
+    });
 
     importFileInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
@@ -2766,7 +2922,7 @@
             okClass: "btn-primary",
             altText: "دمج مع الحالية",
             onOk: () => {
-              pushUndo("استيراد واستبدال القائمة");
+              pushUndo("استيراد واستبدال");
               vocabularyData = normalizedList;
               masteredIds = new Set(importedMastered);
               saveVocabulary();
@@ -2776,7 +2932,7 @@
               showTempGlobalNotice(`✓ تم استيراد ${normalizedList.length} كلمة بنجاح!`);
             },
             onAlt: () => {
-              pushUndo("استيراد ودمج كلمات");
+              pushUndo("استيراد ودمج");
               const existingKeys = new Set(vocabularyData.map(v => `${v.article} ${v.word}`.trim().toLowerCase()));
               const existingIds = new Set(vocabularyData.map(v => String(v.id)));
               let addedCount = 0;
