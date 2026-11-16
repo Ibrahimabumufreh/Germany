@@ -1,0 +1,21 @@
+{
+  "name": "تطبيق تعلم اللغة الألمانية",
+  "short_name": "تعلم الألمانية",
+  "description": "بطاقات تعليمية وتصريف الأفعال والأسماء الألمانية مع دعم العمل بدون إنترنت",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f7fb",
+  "theme_color": "#2563eb",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
