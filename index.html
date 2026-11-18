@@ -896,7 +896,7 @@
           type="text"
           id="searchInput"
           class="search-input"
-          placeholder="ابحث بالألمانية، العربية، أو الإنجليزية..."
+          placeholder="ابحث بالألمانية (أو التصريفات)، العربية، أو الإنجليزية..."
         />
         <select id="categoryFilter" class="form-select">
           <option value="all">جميع التصنيفات</option>
@@ -2180,9 +2180,119 @@
 
     let starterVocabulary = [...defaultVocabulary];
 
+    const EXTRA_KONJUNKTIV = {
+      sein: ["wäre", "wärst", "wären", "wärt"],
+      haben: ["hätte", "hättest", "hätten", "hättet"],
+      werden: ["würde", "würdest", "würden", "würdet"],
+      können: ["könnte", "könntest", "könnten", "könntet"],
+      müssen: ["müsste", "müsstest", "müssten", "müsstet"],
+      dürfen: ["dürfte", "dürftest", "dürften", "dürftet"],
+      sollen: ["sollte", "solltest", "sollten", "solltet"],
+      wollen: ["wollte", "wolltest", "wollten", "wolltet"],
+      mögen: ["möchte", "möchtest", "möchten", "möchtet"],
+      wissen: ["wüsste", "wüsstest", "wüssten", "wüsstet"],
+      kommen: ["käme", "kämst", "kämen", "kämet"],
+      gehen: ["ginge", "gingst", "gingen", "ginget"],
+      geben: ["gäbe", "gäbst", "gäben", "gäbet"],
+      sehen: ["sähe", "sähst", "sähen", "sähet"],
+      sprechen: ["spräche", "sprächst", "sprächen", "sprächet"],
+      finden: ["fände", "fändest", "fänden", "fändet"],
+      brauchen: ["bräuchte", "bräuchtest", "bräuchten", "bräuchtet"]
+    };
+
+    function normalizeSearchText(str) {
+      return String(str || "").toLowerCase().replace(/ß/g, "ss");
+    }
+
+    function inflectStem(stem) {
+      return [stem, `${stem}e`, `${stem}en`, `${stem}er`, `${stem}es`, `${stem}em`];
+    }
+
+    function getAdjectiveSearchForms(word) {
+      const clean = word.trim();
+      const lower = clean.toLowerCase();
+      const [pos, komp, sup] = getAdjectiveComparison(clean);
+      const forms = new Set([pos, komp, sup]);
+
+      let posStem = lower;
+      if (lower === "hoch") {
+        posStem = "hoh";
+      } else if (lower.endsWith("e")) {
+        posStem = lower.slice(0, -1);
+      } else if (/e[lr]$/.test(lower) && lower.length > 3) {
+        inflectStem(lower).forEach(f => forms.add(f));
+        posStem = lower.slice(0, -2) + lower.slice(-1);
+      }
+      inflectStem(posStem).forEach(f => forms.add(f));
+
+      inflectStem(komp.toLowerCase()).forEach(f => forms.add(f));
+
+      const supWord = sup.toLowerCase().replace(/^am\s+/, "");
+      forms.add(supWord);
+      if (supWord.endsWith("en")) {
+        inflectStem(supWord.slice(0, -2)).forEach(f => forms.add(f));
+      }
+
+      return [...forms];
+    }
+
+    function getSearchableForms(item) {
+      if (!item || !item.word) return [];
+      const forms = [];
+
+      if (item.article) {
+        const decl = getNounDeclension(item.article, item.word);
+        if (decl.plural && !decl.plural.startsWith("—")) {
+          forms.push(decl.plural);
+          const pLower = decl.plural.toLowerCase();
+          if (!pLower.endsWith("n") && !pLower.endsWith("s")) {
+            forms.push(`${decl.plural}n`);
+          }
+        }
+        decl.cases.forEach(c => forms.push(c.def, c.indef));
+      } else if (isLikelyVerb(item)) {
+        const conj = conjugateGermanVerb(item.word, item.customConjugation || null);
+        forms.push(conj.infinitive, conj.aux, conj.perfekt.partizip);
+
+        const addConjList = (list, allowCombinedSep = false) => {
+          if (!Array.isArray(list)) return;
+          list.forEach(r => {
+            if (!r || !r.form || r.form === "—") return;
+            forms.push(r.form);
+
+            if (allowCombinedSep && !conj.isReflexive && r.form.includes(" ")) {
+              const parts = r.form.trim().split(/\s+/);
+              if (parts.length === 2) forms.push(`${parts[1]}${parts[0]}`);
+            }
+
+            r.pro.split("/").forEach(p => {
+              const pro = p.trim();
+              if (pro) forms.push(`${pro} ${r.form}`);
+            });
+          });
+        };
+
+        addConjList(conj.present, true);
+        addConjList(conj.past, true);
+        addConjList(conj.perfekt.list, false);
+        addConjList(conj.futur, false);
+        addConjList(conj.imperativ, false);
+
+        const cleanVerb = item.word.trim().toLowerCase().replace(/^sich\s+/, "");
+        if (EXTRA_KONJUNKTIV[cleanVerb]) {
+          forms.push(...EXTRA_KONJUNKTIV[cleanVerb]);
+        }
+      } else if (!item.word.trim().includes(" ")) {
+        forms.push(...getAdjectiveSearchForms(item.word));
+      }
+
+      return forms;
+    }
+
     function prepareItem(item) {
       const fullDe = item.article ? `${item.article} ${item.word}` : item.word;
-      item._search = `${fullDe} ${item.arabic || ""} ${item.english || ""} ${item.category || ""}`.toLowerCase();
+      const extraForms = getSearchableForms(item).join(" ");
+      item._search = normalizeSearchText(`${fullDe} ${item.arabic || ""} ${item.english || ""} ${item.category || ""} ${extraForms}`);
       return item;
     }
 
@@ -2548,7 +2658,7 @@
     }
 
     function applyFilters(resetLimit = true) {
-      const query = searchInput.value.trim().toLowerCase();
+      const query = normalizeSearchText(searchInput.value.trim());
       const category = categoryFilter.value;
 
       if (!query && category === "all") {
