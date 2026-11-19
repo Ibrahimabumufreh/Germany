@@ -13,6 +13,7 @@
   <link rel="apple-touch-icon" href="./icon.svg" />
   <title>تطبيق تعلم اللغة الألمانية - Flashcards & Conjugation</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --bg: #f4f7fb;
@@ -81,6 +82,25 @@
       gap: 8px;
       flex-wrap: wrap;
     }
+
+    .sync-pill {
+      padding: 7px 12px;
+      border-radius: 99px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: var(--muted);
+      touch-action: manipulation;
+      transition: all 0.15s;
+    }
+    .sync-pill.connected { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+    .sync-pill.syncing { background: #eff6ff; border-color: #bfdbfe; color: var(--primary-dark); }
+    .sync-pill.error { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
 
     .undo-pill {
       background: #fef3c7;
@@ -216,9 +236,7 @@
     }
 
     /* شريط التقدم */
-    .progress-wrapper {
-      margin-bottom: 16px;
-    }
+    .progress-wrapper { margin-bottom: 16px; }
 
     .progress-box {
       display: flex;
@@ -435,9 +453,7 @@
       color: var(--text);
     }
 
-    .dropdown-wrap {
-      position: relative;
-    }
+    .dropdown-wrap { position: relative; }
 
     .dropdown-trigger {
       background: var(--card-bg);
@@ -607,9 +623,37 @@
       margin-bottom: 16px;
     }
 
-    .panel h2 { font-size: 1.12rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .panel h2 { font-size: 1.12rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .panel-desc { color: var(--muted); font-size: 0.88rem; margin-bottom: 14px; line-height: 1.55; }
     .backup-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .sql-details {
+      margin-top: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+    }
+    .sql-details summary {
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.88rem;
+      color: var(--primary-dark);
+    }
+    .sql-code-box {
+      direction: ltr;
+      text-align: left;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 12px;
+      border-radius: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      overflow-x: auto;
+      margin-top: 10px;
+      line-height: 1.5;
+      white-space: pre;
+    }
 
     .form-grid {
       display: grid;
@@ -862,9 +906,12 @@
       <div class="header-top">
         <div class="header-brand">
           <h1>🇩🇪 تعلم اللغة الألمانية</h1>
-          <p>بطاقات تعليمية، تصريف الأفعال، وحفظ ذكي لمفرداتك</p>
+          <p>بطاقات تعليمية، تصريف الأفعال، ومزامنة سحابية فورية</p>
         </div>
         <div class="header-actions">
+          <button type="button" id="syncStatusPill" class="sync-pill" title="اضغط لإعداد أو تحديث المزامنة السحابية">
+            ☁️ المزامنة: غير مفعّلة
+          </button>
           <button type="button" id="undoBtn" class="undo-pill hidden">
             ↩️ تراجع
           </button>
@@ -886,7 +933,7 @@
     <nav class="tabs">
       <button class="tab-btn active" id="tabFlashcards">🗂️ البطاقات</button>
       <button class="tab-btn" id="tabList">📖 المفردات (<span id="totalCountBadge">0</span>)</button>
-      <button class="tab-btn" id="tabAdd">➕ إضافة / نسخ احتياطي</button>
+      <button class="tab-btn" id="tabAdd">➕ إضافة / مزامنة</button>
     </nav>
 
     <!-- شريط البحث والتصفية (يظهر فقط في البطاقات والمفردات) -->
@@ -960,7 +1007,7 @@
       </div>
 
       <div id="emptyFlashcards" class="empty-state hidden">
-        لا توجد بطاقات حالياً. يمكنك إضافة كلمات جديدة من تبويب "➕ إضافة / نسخ احتياطي".
+        لا توجد بطاقات حالياً. يمكنك إضافة كلمات جديدة من تبويب "➕ إضافة / مزامنة".
       </div>
     </section>
 
@@ -993,10 +1040,71 @@
       </div>
     </section>
 
-    <!-- 3. قسم الإضافة والنسخ الاحتياطي -->
+    <!-- 3. قسم الإضافة والمزامنة والنسخ الاحتياطي -->
     <section id="addSection" class="hidden">
 
-      <!-- أ) قسم النسخ الاحتياطي ومشاركة الأصدقاء -->
+      <!-- أ) قسم المزامنة الفورية عبر Supabase -->
+      <div class="panel" id="supabaseSyncPanel">
+        <h2>☁️ المزامنة السحابية الفورية (Supabase)</h2>
+        <p class="panel-desc">
+          اربط التطبيق بمشروعك المجاني على <strong>Supabase</strong> لتتم مزامنة كلماتك، تعديلاتك، وتصريفاتك لحظياً بين هاتفك والكمبيوتر وأي جهاز آخر، مع استمرار العمل بدون إنترنت.
+        </p>
+
+        <form id="supabaseForm">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>رابط المشروع (Project URL)</label>
+              <input type="url" id="sbUrlInput" class="form-input" dir="ltr" placeholder="https://xxxxxxxx.supabase.co" required />
+            </div>
+            <div class="form-group">
+              <label>مفتاح المشروع العام (Anon / Publishable Key)</label>
+              <input type="text" id="sbKeyInput" class="form-input" dir="ltr" placeholder="eyJhbGciOi..." required />
+            </div>
+            <div class="form-group">
+              <label>رمز المزامنة الخاص بك (Sync ID)</label>
+              <div style="display:flex; gap:6px;">
+                <input type="text" id="sbSyncIdInput" class="form-input" dir="ltr" style="flex:1;" placeholder="مثال: my-german-2026" required />
+                <button type="button" id="generateSyncIdBtn" class="btn btn-outline" style="padding:8px 10px; min-height:40px;" title="توليد رمز عشوائي">🎲</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="backup-actions">
+            <button type="submit" id="connectSbBtn" class="btn btn-primary">🔗 حفظ وربط المزامنة الفورية</button>
+            <button type="button" id="syncNowBtn" class="btn btn-success hidden">🔄 مزامنة الآن</button>
+            <button type="button" id="disconnectSbBtn" class="btn btn-secondary hidden">🔌 إيقاف المزامنة</button>
+          </div>
+        </form>
+
+        <div id="sbStatus" class="status-msg hidden"></div>
+
+        <details class="sql-details">
+          <summary>🛠️ تعليمات تجهيز جدول Supabase (كود SQL للنسخ)</summary>
+          <p class="panel-desc" style="margin-top:8px; margin-bottom:6px;">
+            افتح <strong>SQL Editor</strong> في لوحة تحكم Supabase، الصق الكود التالي ثم اضغط <strong>Run</strong> (مرة واحدة فقط):
+          </p>
+          <div class="sql-code-box" id="sbSqlCode">create table if not exists public.vocab_sync (
+  id text primary key,
+  vocabulary jsonb not null default '[]'::jsonb,
+  mastered jsonb not null default '[]'::jsonb,
+  updated_at bigint not null default 0,
+  updated_by text
+);
+
+alter table public.vocab_sync enable row level security;
+
+create policy "Allow sync access"
+on public.vocab_sync
+for all
+using (true)
+with check (true);
+
+alter publication supabase_realtime add table public.vocab_sync;</div>
+          <button type="button" id="copySqlBtn" class="btn btn-outline" style="margin-top:10px; min-height:36px; padding:6px 14px; font-size:0.84rem;">📋 نسخ كود SQL</button>
+        </details>
+      </div>
+
+      <!-- ب) قسم النسخ الاحتياطي ومشاركة الأصدقاء -->
       <div class="panel">
         <h2>💾 النسخ الاحتياطي ومشاركة التطبيق مع الأصدقاء</h2>
         <p class="panel-desc">
@@ -1013,7 +1121,7 @@
         <div id="backupStatus" class="status-msg hidden"></div>
       </div>
 
-      <!-- ب) إضافة كلمة يدوياً -->
+      <!-- ج) إضافة كلمة يدوياً -->
       <div class="panel">
         <h2>✍️ إضافة كلمة يدوياً (عربي أو إنجليزي)</h2>
         <p class="panel-desc">أدخل الكلمة الألمانية، وأضف الترجمة العربية أو الإنجليزية أو كلتيهما.</p>
@@ -1064,7 +1172,7 @@
         </form>
       </div>
 
-      <!-- ج) استخراج من صورة OCR -->
+      <!-- د) استخراج من صورة OCR -->
       <div class="panel">
         <h2>📷 استخراج المفردات من صورة (OCR)</h2>
         <p class="panel-desc">
@@ -1088,7 +1196,7 @@
         </div>
       </div>
 
-      <!-- د) إضافة جماعية بالنسخ واللصق -->
+      <!-- هـ) إضافة جماعية بالنسخ واللصق -->
       <div class="panel">
         <h2>📋 إضافة مجموعة كبيرة (النسخ واللصق)</h2>
         <p class="panel-desc">
@@ -2334,13 +2442,22 @@
     const undoBtn = document.getElementById("undoBtn");
     const globalNotice = document.getElementById("globalNotice");
 
-    function saveVocabulary() {
-      const cleanToSave = vocabularyData.map(({ _search, ...rest }) => rest);
-      safeSetStorage("de_vocab_list", JSON.stringify(cleanToSave));
+    function getCleanVocabularyForExport() {
+      return vocabularyData.map(({ _search, ...rest }) => rest);
+    }
+
+    function saveVocabulary(skipCloud = false) {
+      safeSetStorage("de_vocab_list", JSON.stringify(getCleanVocabularyForExport()));
+      if (!skipCloud) scheduleCloudPush();
+    }
+
+    function saveMastered(skipCloud = false) {
+      safeSetStorage("de_mastered", JSON.stringify([...masteredIds]));
+      if (!skipCloud) scheduleCloudPush();
     }
 
     function pushUndo(actionLabel) {
-      const cleanSnapshot = vocabularyData.map(({ _search, ...rest }) => rest);
+      const cleanSnapshot = getCleanVocabularyForExport();
       undoStack.push({ label: actionLabel, vocab: cleanSnapshot, mastered: [...masteredIds] });
       if (undoStack.length > 8) undoStack.shift();
       while (undoStack.length > 0 && !safeSetStorage("de_undo_stack", JSON.stringify(undoStack))) {
@@ -2365,7 +2482,7 @@
       vocabularyData = previousState.vocab.map(prepareItem);
       masteredIds = new Set((previousState.mastered || []).map(String));
       saveVocabulary();
-      safeSetStorage("de_mastered", JSON.stringify([...masteredIds]));
+      saveMastered();
       safeSetStorage("de_undo_stack", JSON.stringify(undoStack));
       updateUndoButton();
       applyFilters(true);
@@ -2381,7 +2498,404 @@
     }
 
     // ==========================================
-    // 5. نافذة التأكيد المخصصة
+    // 5. محرك المزامنة الفورية (Supabase Realtime)
+    // ==========================================
+    const syncStatusPill = document.getElementById("syncStatusPill");
+    const supabaseForm = document.getElementById("supabaseForm");
+    const sbUrlInput = document.getElementById("sbUrlInput");
+    const sbKeyInput = document.getElementById("sbKeyInput");
+    const sbSyncIdInput = document.getElementById("sbSyncIdInput");
+    const generateSyncIdBtn = document.getElementById("generateSyncIdBtn");
+    const connectSbBtn = document.getElementById("connectSbBtn");
+    const syncNowBtn = document.getElementById("syncNowBtn");
+    const disconnectSbBtn = document.getElementById("disconnectSbBtn");
+    const sbStatus = document.getElementById("sbStatus");
+    const copySqlBtn = document.getElementById("copySqlBtn");
+    const sbSqlCode = document.getElementById("sbSqlCode");
+
+    let DEVICE_ID = localStorage.getItem("de_device_id");
+    if (!DEVICE_ID) {
+      DEVICE_ID = `dev_${generateUid()}`;
+      safeSetStorage("de_device_id", DEVICE_ID);
+    }
+
+    let sbConfig = null;
+    try {
+      sbConfig = JSON.parse(localStorage.getItem("de_supabase_config") || "null");
+    } catch (_) {
+      sbConfig = null;
+    }
+
+    let sbClient = null;
+    let sbChannel = null;
+    let cloudPushTimer = null;
+    let hasPendingCloudPush = false;
+    let localLastSyncAt = Number(localStorage.getItem("de_last_sync_at") || "0");
+
+    function updateSyncPill(state, text) {
+      syncStatusPill.className = "sync-pill" + (state ? ` ${state}` : "");
+      syncStatusPill.textContent = text;
+    }
+
+    function updateSyncButtonsUI(isConnected) {
+      syncNowBtn.classList.toggle("hidden", !isConnected);
+      disconnectSbBtn.classList.toggle("hidden", !isConnected);
+      connectSbBtn.textContent = isConnected ? "💾 تحديث بيانات الربط" : "🔗 حفظ وربط المزامنة الفورية";
+    }
+
+    function populateSupabaseInputs() {
+      if (!sbConfig) return;
+      sbUrlInput.value = sbConfig.url || "";
+      sbKeyInput.value = sbConfig.key || "";
+      sbSyncIdInput.value = sbConfig.syncId || "";
+    }
+
+    function setLocalLastSyncAt(ts) {
+      localLastSyncAt = Number(ts) || 0;
+      safeSetStorage("de_last_sync_at", String(localLastSyncAt));
+    }
+
+    function applyRemotePayload(remoteRow, notifyUser = true) {
+      if (!remoteRow) return;
+      if (remoteRow.updated_by === DEVICE_ID) {
+        if (remoteRow.updated_at > localLastSyncAt) {
+          setLocalLastSyncAt(remoteRow.updated_at);
+        }
+        return;
+      }
+      if (Number(remoteRow.updated_at) <= localLastSyncAt) return;
+
+      const remoteVocab = Array.isArray(remoteRow.vocabulary) ? remoteRow.vocabulary : [];
+      const remoteMastered = Array.isArray(remoteRow.mastered) ? remoteRow.mastered.map(String) : [];
+
+      vocabularyData = normalizeVocabularyList(remoteVocab);
+      masteredIds = new Set(remoteMastered);
+      setLocalLastSyncAt(remoteRow.updated_at);
+
+      saveVocabulary(true);
+      saveMastered(true);
+      applyFilters(false);
+      updateSyncPill("connected", "☁️ متزامن فوري");
+
+      if (notifyUser) {
+        showTempGlobalNotice(`☁️ تمت مزامنة ${vocabularyData.length} كلمة من جهاز آخر`);
+      }
+    }
+
+    async function pushToSupabase(force = false) {
+      if (!sbClient || !sbConfig || !sbConfig.syncId) return false;
+      if (!navigator.onLine) {
+        hasPendingCloudPush = true;
+        updateSyncPill("error", "☁️ بانتظار الإنترنت");
+        return false;
+      }
+
+      updateSyncPill("syncing", "⏳ جاري المزامنة...");
+      const nowTs = Date.now();
+      const payload = {
+        id: sbConfig.syncId,
+        vocabulary: getCleanVocabularyForExport(),
+        mastered: [...masteredIds],
+        updated_at: nowTs,
+        updated_by: DEVICE_ID
+      };
+
+      try {
+        const { error } = await sbClient
+          .from("vocab_sync")
+          .upsert(payload, { onConflict: "id" });
+
+        if (error) throw error;
+
+        hasPendingCloudPush = false;
+        setLocalLastSyncAt(nowTs);
+        updateSyncPill("connected", "☁️ متزامن فوري");
+        return true;
+      } catch (err) {
+        console.error("Supabase push error:", err);
+        hasPendingCloudPush = true;
+        updateSyncPill("error", "⚠️ تعذرت المزامنة");
+        if (force) {
+          showStatus(sbStatus, `خطأ أثناء الرفع إلى Supabase: ${err.message || "تحقق من الإعدادات والجدول."}`, "error");
+        }
+        return false;
+      }
+    }
+
+    function scheduleCloudPush() {
+      if (!sbClient || !sbConfig) return;
+      hasPendingCloudPush = true;
+      clearTimeout(cloudPushTimer);
+      cloudPushTimer = setTimeout(() => {
+        pushToSupabase(false);
+      }, 450);
+    }
+
+    async function pullFromSupabase(silent = true) {
+      if (!sbClient || !sbConfig || !sbConfig.syncId) return null;
+      if (!navigator.onLine) {
+        updateSyncPill("error", "☁️ غير متصل");
+        return null;
+      }
+
+      if (!silent) updateSyncPill("syncing", "⏳ جاري التحقق...");
+
+      const { data, error } = await sbClient
+        .from("vocab_sync")
+        .select("*")
+        .eq("id", sbConfig.syncId)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    }
+
+    function startRealtimeSubscription() {
+      if (!sbClient || !sbConfig || !sbConfig.syncId) return;
+      if (sbChannel) {
+        sbClient.removeChannel(sbChannel);
+        sbChannel = null;
+      }
+
+      sbChannel = sbClient
+        .channel(`vocab-sync-${sbConfig.syncId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "vocab_sync",
+            filter: `id=eq.${sbConfig.syncId}`
+          },
+          (payload) => {
+            if (payload && payload.new) {
+              applyRemotePayload(payload.new, true);
+            }
+          }
+        )
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            updateSyncPill("connected", "☁️ متزامن فوري");
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            updateSyncPill("error", "⚠️ انقطع البث الفوري");
+          }
+        });
+    }
+
+    function mergeLocalAndRemote(remoteRow) {
+      const remoteVocab = normalizeVocabularyList(Array.isArray(remoteRow.vocabulary) ? remoteRow.vocabulary : []);
+      const remoteMastered = Array.isArray(remoteRow.mastered) ? remoteRow.mastered.map(String) : [];
+
+      const merged = [...remoteVocab];
+      const existingKeys = new Set(merged.map(v => `${v.article} ${v.word}`.trim().toLowerCase()));
+      const existingIds = new Set(merged.map(v => String(v.id)));
+
+      vocabularyData.forEach(localItem => {
+        const key = `${localItem.article} ${localItem.word}`.trim().toLowerCase();
+        if (!existingKeys.has(key)) {
+          const uid = existingIds.has(String(localItem.id)) ? generateUid() : String(localItem.id);
+          existingIds.add(uid);
+          existingKeys.add(key);
+          merged.push(prepareItem({ ...localItem, id: uid }));
+        }
+      });
+
+      remoteMastered.forEach(id => masteredIds.add(id));
+      vocabularyData = merged;
+      saveVocabulary(true);
+      saveMastered(true);
+      applyFilters(true);
+    }
+
+    async function connectSupabase(config, isManualAction = false) {
+      if (!window.supabase || typeof window.supabase.createClient !== "function") {
+        if (isManualAction) {
+          showStatus(sbStatus, "تعذر تحميل مكتبة Supabase. تأكد من اتصالك بالإنترنت.", "error");
+        }
+        updateSyncPill("error", "⚠️ لا يوجد إنترنت");
+        return;
+      }
+
+      sbConfig = {
+        url: config.url.trim().replace(/\/+$/, ""),
+        key: config.key.trim(),
+        syncId: config.syncId.trim()
+      };
+
+      try {
+        updateSyncPill("syncing", "⏳ جاري الاتصال...");
+        sbClient = window.supabase.createClient(sbConfig.url, sbConfig.key);
+
+        const remoteRow = await pullFromSupabase(true);
+
+        safeSetStorage("de_supabase_config", JSON.stringify(sbConfig));
+        updateSyncButtonsUI(true);
+
+        if (!remoteRow) {
+          // أول مرة لهذا الـ Sync ID: نرفع بيانات الجهاز الحالي للسحابة
+          const ok = await pushToSupabase(true);
+          if (ok) {
+            startRealtimeSubscription();
+            if (isManualAction) {
+              showStatus(sbStatus, `✓ تم إنشاء قناة المزامنة (${sbConfig.syncId}) ورفع ${vocabularyData.length} كلمة بنجاح!`, "success");
+            }
+          }
+          return;
+        }
+
+        const isFreshDevice = localStorage.getItem("de_vocab_list") === null || (localLastSyncAt === 0 && !isManualAction);
+
+        if (isManualAction && localLastSyncAt === 0 && vocabularyData.length > 0 && Array.isArray(remoteRow.vocabulary) && remoteRow.vocabulary.length > 0) {
+          // المستخدم يربط جهازاً يحتوي على كلمات بقاعدة سحابية تحتوي هي أيضاً على كلمات
+          openConfirmModal({
+            title: "تم العثور على بيانات في السحابة",
+            message: `تحتوي السحابة على ${remoteRow.vocabulary.length} كلمة، وجهازك يحتوي على ${vocabularyData.length} كلمة. ماذا تفضل؟`,
+            okText: "دمج السحابة + جهازي (موصى به)",
+            okClass: "btn-success",
+            altText: "سحب من السحابة فقط",
+            onOk: async () => {
+              pushUndo("دمج المزامنة");
+              mergeLocalAndRemote(remoteRow);
+              await pushToSupabase(true);
+              startRealtimeSubscription();
+              showStatus(sbStatus, `✓ تم الدمج والمزامنة الفورية (${vocabularyData.length} كلمة)!`, "success");
+              showTempGlobalNotice("☁️ تم دمج الكلمات وتفعيل المزامنة الفورية");
+            },
+            onAlt: () => {
+              pushUndo("سحب من السحابة");
+              setLocalLastSyncAt(0);
+              applyRemotePayload({ ...remoteRow, updated_by: "cloud_init" }, false);
+              startRealtimeSubscription();
+              showStatus(sbStatus, `✓ تم سحب ${vocabularyData.length} كلمة وتفعيل المزامنة الفورية!`, "success");
+              showTempGlobalNotice("☁️ تم سحب الكلمات وتفعيل المزامنة الفورية");
+            }
+          });
+          return;
+        }
+
+        if (isFreshDevice || Number(remoteRow.updated_at) > localLastSyncAt) {
+          applyRemotePayload({ ...remoteRow, updated_by: "cloud_pull" }, !isManualAction);
+        } else if (hasPendingCloudPush) {
+          await pushToSupabase(false);
+        }
+
+        startRealtimeSubscription();
+        updateSyncPill("connected", "☁️ متزامن فوري");
+        if (isManualAction) {
+          showStatus(sbStatus, `✓ تم الربط بالمزامنة الفورية بنجاح للرمز (${sbConfig.syncId})!`, "success");
+        }
+      } catch (err) {
+        console.error("Supabase connect error:", err);
+        updateSyncPill("error", "⚠️ خطأ بالاتصال");
+        if (isManualAction) {
+          showStatus(sbStatus, `فشل الاتصال بـ Supabase: ${err.message || "تأكد من صحة الرابط والمفتاح وإنشاء جدول vocab_sync."}`, "error");
+        }
+      }
+    }
+
+    syncStatusPill.addEventListener("click", () => {
+      switchTab("add");
+      document.getElementById("supabaseSyncPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    generateSyncIdBtn.addEventListener("click", () => {
+      const rnd = Math.random().toString(36).slice(2, 8);
+      sbSyncIdInput.value = `de-sync-${rnd}`;
+    });
+
+    copySqlBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(sbSqlCode.textContent);
+        showTempGlobalNotice("✓ تم نسخ كود SQL بنجاح!");
+      } catch (_) {
+        showTempGlobalNotice("حدد الكود وانسخه يدوياً.");
+      }
+    });
+
+    supabaseForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const url = sbUrlInput.value.trim();
+      const key = sbKeyInput.value.trim();
+      const syncId = sbSyncIdInput.value.trim();
+      if (!url || !key || !syncId) return;
+
+      connectSbBtn.disabled = true;
+      showStatus(sbStatus, "جاري الاتصال والتحقق من جدول Supabase...", "info");
+      await connectSupabase({ url, key, syncId }, true);
+      connectSbBtn.disabled = false;
+    });
+
+    syncNowBtn.addEventListener("click", async () => {
+      if (!sbClient || !sbConfig) return;
+      syncNowBtn.disabled = true;
+      try {
+        showStatus(sbStatus, "جاري مزامنة البيانات...", "info");
+        if (hasPendingCloudPush) {
+          await pushToSupabase(true);
+        } else {
+          const remoteRow = await pullFromSupabase(false);
+          if (remoteRow && Number(remoteRow.updated_at) > localLastSyncAt) {
+            applyRemotePayload({ ...remoteRow, updated_by: "manual_pull" }, true);
+          } else {
+            await pushToSupabase(true);
+          }
+        }
+        showStatus(sbStatus, `✓ تم التحديث والمزامنة بنجاح (${vocabularyData.length} كلمة)!`, "success");
+      } catch (err) {
+        showStatus(sbStatus, `تعذرت المزامنة: ${err.message || "خطأ غير معروف"}`, "error");
+      } finally {
+        syncNowBtn.disabled = false;
+      }
+    });
+
+    disconnectSbBtn.addEventListener("click", () => {
+      if (sbClient && sbChannel) {
+        sbClient.removeChannel(sbChannel);
+      }
+      sbChannel = null;
+      sbClient = null;
+      sbConfig = null;
+      hasPendingCloudPush = false;
+      localStorage.removeItem("de_supabase_config");
+      localStorage.removeItem("de_last_sync_at");
+      localLastSyncAt = 0;
+      updateSyncButtonsUI(false);
+      updateSyncPill("", "☁️ المزامنة: غير مفعّلة");
+      showStatus(sbStatus, "تم إيقاف المزامنة السحابية. ستبقى بياناتك محفوظة محلياً على هذا الجهاز.", "info");
+    });
+
+    // عند عودة التطبيق للواجهة (خاصة في الهواتف) أو عودة الإنترنت، يتم التحقق من التحديثات فوراً
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState === "visible" && sbClient && sbConfig) {
+        try {
+          if (hasPendingCloudPush) {
+            await pushToSupabase(false);
+          } else {
+            const remoteRow = await pullFromSupabase(true);
+            if (remoteRow && Number(remoteRow.updated_at) > localLastSyncAt) {
+              applyRemotePayload(remoteRow, true);
+            }
+          }
+        } catch (_) {}
+      }
+    });
+
+    window.addEventListener("online", async () => {
+      if (sbClient && sbConfig) {
+        if (hasPendingCloudPush) {
+          await pushToSupabase(false);
+        } else {
+          try {
+            const remoteRow = await pullFromSupabase(true);
+            if (remoteRow) applyRemotePayload(remoteRow, true);
+          } catch (_) {}
+        }
+        startRealtimeSubscription();
+      }
+    });
+
+    // ==========================================
+    // 6. نافذة التأكيد المخصصة
     // ==========================================
     const confirmModal = document.getElementById("confirmModal");
     const confirmTitle = document.getElementById("confirmTitle");
@@ -2413,7 +2927,7 @@
     }
 
     // ==========================================
-    // 6. دوال التحليل والفرز
+    // 7. دوال التحليل والفرز
     // ==========================================
     const ARABIC_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
     const ARABIC_CHUNK_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s،؟]+|[a-zA-ZäöüÄÖÜß\s'-]+/g;
@@ -2560,7 +3074,7 @@
     }
 
     // ==========================================
-    // 7. عناصر DOM والعرض التلقائي
+    // 8. عناصر DOM والعرض التلقائي
     // ==========================================
     const searchControlsBar = document.getElementById("searchControlsBar");
     const searchInput = document.getElementById("searchInput");
@@ -2612,7 +3126,6 @@
     const cardCounter = document.getElementById("cardCounter");
     const progressBar = document.getElementById("progressBar");
 
-    // قائمة الإدارة المنسدلة في المفردات
     listMenuBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       listActionsMenu.classList.toggle("hidden");
@@ -2861,7 +3374,7 @@
             vocabularyData = vocabularyData.filter(v => String(v.id) !== targetId);
             masteredIds.delete(targetId);
             saveVocabulary();
-            safeSetStorage("de_mastered", JSON.stringify([...masteredIds]));
+            saveMastered();
             applyFilters(false);
             showTempGlobalNotice(`✓ تم حذف "${label}"`);
           }
@@ -2881,7 +3394,7 @@
           vocabularyData = [];
           masteredIds.clear();
           saveVocabulary();
-          safeSetStorage("de_mastered", JSON.stringify([]));
+          saveMastered();
           applyFilters(true);
           showTempGlobalNotice("✓ تم حذف جميع الكلمات.");
         }
@@ -2928,7 +3441,7 @@
     }
 
     // ==========================================
-    // 8. النسخ الاحتياطي + تصدير ملف الأصدقاء
+    // 9. النسخ الاحتياطي + تصدير ملف الأصدقاء
     // ==========================================
     const exportStarterBtn = document.getElementById("exportStarterBtn");
     const exportJsonBtn = document.getElementById("exportJsonBtn");
@@ -2950,7 +3463,7 @@
     }
 
     exportStarterBtn.addEventListener("click", () => {
-      const cleanVocab = vocabularyData.map(({ _search, ...rest }) => rest);
+      const cleanVocab = getCleanVocabularyForExport();
       const payload = {
         app: "GermanFlashcardsStarter",
         version: 2,
@@ -2965,7 +3478,7 @@
     function exportBackupJson() {
       listActionsMenu.classList.add("hidden");
       const today = new Date().toISOString().slice(0, 10);
-      const cleanVocab = vocabularyData.map(({ _search, ...rest }) => rest);
+      const cleanVocab = getCleanVocabularyForExport();
       const payload = {
         app: "GermanFlashcards",
         version: 2,
@@ -3036,7 +3549,7 @@
               vocabularyData = normalizedList;
               masteredIds = new Set(importedMastered);
               saveVocabulary();
-              safeSetStorage("de_mastered", JSON.stringify([...masteredIds]));
+              saveMastered();
               applyFilters(true);
               showStatus(backupStatus, `✓ تم استيراد ${normalizedList.length} كلمة واستبدال القائمة بنجاح!`, "success");
               showTempGlobalNotice(`✓ تم استيراد ${normalizedList.length} كلمة بنجاح!`);
@@ -3060,7 +3573,7 @@
 
               importedMastered.forEach(id => masteredIds.add(id));
               saveVocabulary();
-              safeSetStorage("de_mastered", JSON.stringify([...masteredIds]));
+              saveMastered();
               applyFilters(true);
               showStatus(backupStatus, `✓ تم دمج ${addedCount} كلمة جديدة بنجاح!`, "success");
               showTempGlobalNotice(`✓ تم دمج ${addedCount} كلمة جديدة!`);
@@ -3076,7 +3589,7 @@
     });
 
     // ==========================================
-    // 9. نافذة تعديل البطاقة
+    // 10. نافذة تعديل البطاقة
     // ==========================================
     const editModal = document.getElementById("editModal");
     const editForm = document.getElementById("editForm");
@@ -3144,7 +3657,7 @@
     });
 
     // ==========================================
-    // 10. الإضافة اليدوية
+    // 11. الإضافة اليدوية
     // ==========================================
     const manualForm = document.getElementById("manualForm");
     const manualStatus = document.getElementById("manualStatus");
@@ -3193,7 +3706,7 @@
     });
 
     // ==========================================
-    // 11. معالجة الصورة + استخراج النص (OCR)
+    // 12. معالجة الصورة + استخراج النص (OCR)
     // ==========================================
     const ocrImageInput = document.getElementById("ocrImageInput");
     const ocrLangSelect = document.getElementById("ocrLangSelect");
@@ -3301,7 +3814,7 @@
     });
 
     // ==========================================
-    // 12. الإضافة الجماعية بالنسخ واللصق
+    // 13. الإضافة الجماعية بالنسخ واللصق
     // ==========================================
     const analyzeBulkBtn = document.getElementById("analyzeBulkBtn");
     const clearBulkBtn = document.getElementById("clearBulkBtn");
@@ -3425,7 +3938,7 @@
     }
 
     // ==========================================
-    // 13. أحداث البطاقات + البحث السريع + التشغيل الأولي
+    // 14. أحداث البطاقات + البحث السريع + التشغيل الأولي
     // ==========================================
     let touchStartX = 0;
     let touchEndX = 0;
@@ -3504,7 +4017,7 @@
       const itemId = String(item.id);
       if (masteredIds.has(itemId)) masteredIds.delete(itemId);
       else masteredIds.add(itemId);
-      safeSetStorage("de_mastered", JSON.stringify([...masteredIds]));
+      saveMastered();
       updateProgress();
       renderFlashcard();
     });
@@ -3532,13 +4045,19 @@
             if (Array.isArray(list) && list.length > 0) {
               starterVocabulary = list;
               vocabularyData = normalizeVocabularyList(list);
-              saveVocabulary();
+              saveVocabulary(true);
             }
           }
         } catch (_) {}
       }
       updateUndoButton();
       applyFilters(true);
+
+      if (sbConfig && sbConfig.url && sbConfig.key && sbConfig.syncId) {
+        populateSupabaseInputs();
+        updateSyncButtonsUI(true);
+        connectSupabase(sbConfig, false);
+      }
     }
 
     initApp();
